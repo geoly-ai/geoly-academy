@@ -10,20 +10,26 @@
 				<Tooltip :text="__('Published Courses')">
 					<NumberChart
 						class="border rounded-md"
-						:config="{ title: 'Courses', value: chartDetails.data.courses }"
+						:config="{
+							title: __('Courses'),
+							value: chartDetails.data.courses,
+						}"
 					/>
 				</Tooltip>
 				<Tooltip :text="__('Active Members')">
 					<NumberChart
 						class="border rounded-md"
-						:config="{ title: 'Signups', value: chartDetails.data.users }"
+						:config="{
+							title: __('Signups'),
+							value: chartDetails.data.users,
+						}"
 					/>
 				</Tooltip>
 				<Tooltip :text="__('Course Enrollments')">
 					<NumberChart
 						class="border rounded-md"
 						:config="{
-							title: 'Enrollments',
+							title: __('Enrollments'),
 							value: chartDetails.data.enrollments,
 						}"
 					/>
@@ -32,7 +38,7 @@
 					<NumberChart
 						class="border rounded-md"
 						:config="{
-							title: 'Completions',
+							title: __('Completions'),
 							value: chartDetails.data.completions,
 						}"
 					/>
@@ -41,7 +47,7 @@
 					<NumberChart
 						class="border rounded-md"
 						:config="{
-							title: 'Certifications',
+							title: __('Certifications'),
 							value: chartDetails.data.certifications,
 						}"
 					/>
@@ -49,83 +55,24 @@
 			</div>
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
 				<div class="border rounded-md min-h-72">
-					<AxisChart
-						v-if="signupsChart.data"
-						:config="{
-							data: signupsChart.data,
-							title: 'Signups',
-							subtitle: 'Signups per day',
-							xAxis: {
-								key: 'date',
-								type: 'time',
-								title: 'Date',
-								timeGrain: 'day',
-							},
-							yAxis: {
-								title: 'Signups',
-							},
-							series: [{ name: 'signups', type: 'line', showDataPoints: true }],
-						}"
-					/>
+					<AxisChart v-if="signupsChart.data" :config="signupsChartConfig" />
 				</div>
 				<div class="border rounded-md min-h-72">
 					<AxisChart
 						v-if="enrollmentChart.data"
-						:config="{
-							data: enrollmentChart.data,
-							title: 'Enrollments',
-							subtitle: 'Enrollments per day',
-							xAxis: {
-								key: 'date',
-								type: 'time',
-								title: 'Date',
-								timeGrain: 'day',
-							},
-							yAxis: {
-								title: 'Enrollments',
-							},
-							series: [
-								{ name: 'enrollments', type: 'line', showDataPoints: true },
-							],
-						}"
+						:config="enrollmentChartConfig"
 					/>
 				</div>
 				<div class="border rounded-md">
 					<AxisChart
 						v-if="certification.data"
-						:config="{
-							data: certification.data,
-							title: 'Certifications',
-							subtitle: 'Certifications per day',
-							xAxis: {
-								key: 'date',
-								type: 'time',
-								title: 'Date',
-								timeGrain: 'day',
-							},
-							yAxis: {
-								title: 'Certifications',
-							},
-							series: [
-								{
-									name: 'certifications',
-									type: 'line',
-									showDataPoints: true,
-								},
-							],
-						}"
+						:config="certificationChartConfig"
 					/>
 				</div>
 				<div class="border rounded-md">
 					<DonutChart
 						v-if="courseCompletion.data"
-						:config="{
-							data: courseCompletion.data,
-							title: 'Completions',
-							subtitle: 'Course Completion',
-							categoryColumn: 'label',
-							valueColumn: 'value',
-						}"
+						:config="completionDonutConfig"
 					/>
 				</div>
 			</div>
@@ -218,7 +165,59 @@ const courseCompletion = createResource({
 	url: 'lms.lms.utils.get_course_completion_data',
 	auto: true,
 	cache: ['courseCompletion'],
+	transform(data) {
+		const labelMap = {
+			Completed: __('Completed'),
+			'In Progress': __('In Progress'),
+		}
+		return data.map((row) => ({
+			...row,
+			label: labelMap[row.label] || row.label,
+		}))
+	},
 })
+
+const timeAxis = () => ({
+	key: 'date',
+	type: 'time',
+	title: __('Date'),
+	timeGrain: 'day',
+})
+
+const signupsChartConfig = computed(() => ({
+	data: signupsChart.data,
+	title: __('Signups'),
+	subtitle: __('Signups per day'),
+	xAxis: timeAxis(),
+	yAxis: { title: __('Signups') },
+	series: [{ name: 'signups', type: 'line', showDataPoints: true }],
+}))
+
+const enrollmentChartConfig = computed(() => ({
+	data: enrollmentChart.data,
+	title: __('Enrollments'),
+	subtitle: __('Enrollments per day'),
+	xAxis: timeAxis(),
+	yAxis: { title: __('Enrollments') },
+	series: [{ name: 'enrollments', type: 'line', showDataPoints: true }],
+}))
+
+const certificationChartConfig = computed(() => ({
+	data: certification.data,
+	title: __('Certifications'),
+	subtitle: __('Certifications per day'),
+	xAxis: timeAxis(),
+	yAxis: { title: __('Certifications') },
+	series: [{ name: 'certifications', type: 'line', showDataPoints: true }],
+}))
+
+const completionDonutConfig = computed(() => ({
+	data: courseCompletion.data,
+	title: __('Completions'),
+	subtitle: __('Course Completion'),
+	categoryColumn: 'label',
+	valueColumn: 'value',
+}))
 
 usePageMeta(() => {
 	return {

@@ -2717,7 +2717,7 @@ msgstr ""
 #: lms/lms/doctype/lms_course/lms_course.json
 #: lms/lms/workspace/learning/learning.json
 msgid "Enrollments"
-msgstr "注册记录"
+msgstr "报名人数"
 
 #: lms/lms/doctype/lms_settings/lms_settings.py:27
 msgid "Enter Client Id and Client Secret in Google Settings to send calendar invites for evaluations."
@@ -6811,7 +6811,7 @@ msgstr "注册设置"
 #. Label of a chart in the Learning Workspace
 #: lms/lms/workspace/learning/learning.json
 msgid "Signups"
-msgstr "注册记录"
+msgstr "注册用户"
 
 #. Label of the skill (Table MultiSelect) field in DocType 'User'
 #. Label of the skill (Data) field in DocType 'User Skill'
@@ -8773,4 +8773,20 @@ msgstr "不支持的文件类型。允许：图片、视频、音频、PDF、Off
 #: frontend/src/utils/upload.js
 msgid "Download courseware"
 msgstr "下载课件"
+
+#: frontend/src/pages/Statistics.vue
+msgid "Completions"
+msgstr "完成数"
+
+#: frontend/src/pages/Statistics.vue
+msgid "Signups per day"
+msgstr "每日注册"
+
+#: frontend/src/pages/Statistics.vue
+msgid "Enrollments per day"
+msgstr "每日报名"
+
+#: frontend/src/pages/Statistics.vue
+msgid "Certifications per day"
+msgstr "每日认证"
 
