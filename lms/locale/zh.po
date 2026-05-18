@@ -8762,3 +8762,15 @@ msgstr "{} 通过"
 msgid "{} Published"
 msgstr "{} 已发布"
 
+#: frontend/src/components/SourceCodeLink.vue
+msgid "Modified under AGPL-3.0. Corresponding source:"
+msgstr "基于 AGPL-3.0 修改。对应源码："
+
+#: frontend/src/components/UploadPlugin.vue
+msgid "Unsupported file type. Allowed: images, video, audio, PDF, Office, ZIP."
+msgstr "不支持的文件类型。允许：图片、视频、音频、PDF、Office、ZIP。"
+
+#: frontend/src/utils/upload.js
+msgid "Download courseware"
+msgstr "下载课件"
+

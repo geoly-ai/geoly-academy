@@ -31,6 +31,12 @@ from pypika import functions as fn
 
 from lms.lms.course_import_export import export_course_zip, import_course_zip
 from lms.lms.doctype.course_lesson.course_lesson import save_progress
+from lms.lms.language import (
+	frappe_language,
+	get_current_language,
+	get_language_payload,
+	set_current_language,
+)
 from lms.lms.utils import (
 	LMS_ROLES,
 	can_modify_batch,
@@ -73,12 +79,24 @@ def get_user_info():
 
 
 @frappe.whitelist(allow_guest=True)
-def get_translations():
-	if frappe.session.user != "Guest":
-		language = frappe.db.get_value("User", frappe.session.user, "language")
-	else:
-		language = frappe.db.get_single_value("System Settings", "language")
+def get_translations(lang: str | None = None):
+	language = frappe_language(lang) if lang else frappe_language(get_current_language())
 	return get_all_translations(language)
+
+
+@frappe.whitelist(allow_guest=True)
+def get_language():
+	return get_language_payload()
+
+
+@frappe.whitelist(allow_guest=True)
+def set_language(language: str):
+	code = set_current_language(language)
+	return {
+		"language": code,
+		"frappe_language": frappe_language(code),
+		"translations": get_all_translations(frappe_language(code)),
+	}
 
 
 @frappe.whitelist()

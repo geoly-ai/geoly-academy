@@ -64,17 +64,25 @@ export class Upload {
 			})
 			app.mount(this.wrapper)
 			return
-		} else if (file.file_type == 'PDF') {
-			this.wrapper.innerHTML = `<iframe src="${
-				window.location.origin
-			}${encodeURI(
-				file.file_url
-			)}" width='100%' height='700px' class="mb-4" type="application/pdf"></iframe>`
+		} else if (file.file_type?.toLowerCase() === 'pdf') {
+			const src = file.file_url.startsWith('http')
+				? encodeURI(file.file_url)
+				: `${window.location.origin}${encodeURI(file.file_url)}`
+			this.wrapper.innerHTML = `<iframe src="${src}" width='100%' height='700px' class="mb-4" type="application/pdf"></iframe>`
+			return
+		} else if (this.isCourseware(file.file_type)) {
+			const href = file.file_url.startsWith('http')
+				? encodeURI(file.file_url)
+				: `${window.location.origin}${encodeURI(file.file_url)}`
+			const label =
+				(window.__ && window.__('Download courseware')) || 'Download courseware'
+			this.wrapper.innerHTML = `<a class="mb-4 inline-flex items-center text-ink-blue-3 underline" href="${href}" target="_blank" rel="noopener noreferrer">${label} (${file.file_type})</a>`
 			return
 		} else {
-			this.wrapper.innerHTML = `<img class="mb-4" src=${encodeURI(
-				file.file_url
-			)} width='100%'>`
+			const src = file.file_url.startsWith('http')
+				? encodeURI(file.file_url)
+				: encodeURI(file.file_url)
+			this.wrapper.innerHTML = `<img class="mb-4" src=${src} width='100%'>`
 			return
 		}
 	}
@@ -112,5 +120,19 @@ export class Upload {
 
 	isAudio(type) {
 		return ['mp3', 'wav', 'ogg'].includes(type.toLowerCase())
+	}
+
+	isCourseware(type) {
+		return [
+			'ppt',
+			'pptx',
+			'doc',
+			'docx',
+			'xls',
+			'xlsx',
+			'zip',
+			'rar',
+			'txt',
+		].includes(type?.toLowerCase())
 	}
 }

@@ -4,6 +4,9 @@
 			class="flex flex-1 flex-col overflow-y-auto pb-10"
 			id="scrollContainer"
 		>
+		<div class="absolute right-3 top-3 z-30">
+			<LanguageSwitcher />
+		</div>
 			<slot />
 		</div>
 
@@ -54,9 +57,12 @@
 				</button>
 			</div>
 		</div>
+		<SourceCodeLink />
 	</div>
 </template>
 <script setup>
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+import SourceCodeLink from '@/components/SourceCodeLink.vue'
 import { getSidebarLinks } from '@/utils'
 import { useRouter } from 'vue-router'
 import { call } from 'frappe-ui'

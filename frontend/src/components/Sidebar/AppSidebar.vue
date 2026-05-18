@@ -190,6 +190,10 @@
 							@click="redirectToAppointmentScreen()"
 						/>
 					</Tooltip>
+					<LanguageSwitcher
+						v-if="!sidebarStore.isSidebarCollapsed"
+						class="shrink-0"
+					/>
 					<Tooltip v-if="showOnboarding" :text="__('Help')">
 						<CircleHelp
 							class="size-4 stroke-1.5 text-ink-gray-7 cursor-pointer"
@@ -305,6 +309,7 @@ import UserDropdown from '@/components/Sidebar/UserDropdown.vue'
 import CollapseSidebar from '@/components/Icons/CollapseSidebar.vue'
 import SidebarLink from '@/components/Sidebar/SidebarLink.vue'
 import CommandPalette from '@/components/CommandPalette/CommandPalette.vue'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 
 const { user } = sessionStore()
 const { userResource } = usersStore()

@@ -1,6 +1,6 @@
 <template>
 	<FileUploader
-		:fileTypes="['image/*', 'video/*', 'audio/*', '.pdf']"
+		:fileTypes="coursewareTypes"
 		:validateFile="validateFile"
 		@success="(data) => addFile(data)"
 		ref="fileUploader"
@@ -36,10 +36,52 @@ const addFile = (file) => {
 	})
 }
 
+const coursewareTypes = [
+	'image/*',
+	'video/*',
+	'audio/*',
+	'.pdf',
+	'.ppt',
+	'.pptx',
+	'.doc',
+	'.docx',
+	'.xls',
+	'.xlsx',
+	'.zip',
+	'.rar',
+	'.txt',
+]
+
+const allowedExtensions = [
+	'jpg',
+	'jpeg',
+	'png',
+	'gif',
+	'webp',
+	'mp4',
+	'mov',
+	'avi',
+	'mkv',
+	'webm',
+	'mp3',
+	'wav',
+	'ogg',
+	'pdf',
+	'ppt',
+	'pptx',
+	'doc',
+	'docx',
+	'xls',
+	'xlsx',
+	'zip',
+	'rar',
+	'txt',
+]
+
 const validateFile = (file) => {
 	let extension = file.name.split('.').pop().toLowerCase()
-	if (!['jpg', 'jpeg', 'png', 'mp4', 'mov', 'mp3', 'pdf'].includes(extension)) {
-		return 'Only image and video files are allowed.'
+	if (!allowedExtensions.includes(extension)) {
+		return __('Unsupported file type. Allowed: images, video, audio, PDF, Office, ZIP.')
 	}
 }
 

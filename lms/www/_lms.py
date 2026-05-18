@@ -8,6 +8,7 @@ from frappe.utils.data import escape_html
 from frappe.utils.jinja_globals import is_rtl
 from frappe.utils.telemetry import capture
 
+from lms.lms.language import get_current_language, get_language_payload
 from lms.lms.utils import get_lms_path, get_lms_route
 
 no_cache = 1
@@ -31,6 +32,7 @@ def get_context():
 
 
 def get_boot():
+	language_payload = get_language_payload()
 	return frappe._dict(
 		{
 			"frappe_version": frappe.__version__,
@@ -40,6 +42,9 @@ def get_boot():
 			"lms_path": get_lms_path(),
 			"lang": get_user_lang(),
 			"text_direction": "rtl" if is_rtl() else "ltr",
+			"language": language_payload.get("language"),
+			"supported_languages": language_payload.get("supported_languages"),
+			"source_code_url": frappe.conf.get("lms_source_code_url"),
 		}
 	)
 

@@ -9,6 +9,7 @@ readme = "README.md"
 dynamic = ["version"]
 dependencies = [
     # core dependencies
+    "boto3~=1.35.0",
     "websocket_client~=1.6.4",
     "markdown~=3.5.1",
     "beautifulsoup4>=4.12,<4.14",

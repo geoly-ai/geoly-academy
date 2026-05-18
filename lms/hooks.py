@@ -113,6 +113,10 @@ override_doctype_class = {
 # Hook on document methods and events
 
 doc_events = {
+	"File": {
+		"after_insert": "lms.lms.cos_storage.handler.upload_file_to_cos",
+		"on_trash": "lms.lms.cos_storage.handler.delete_file_from_cos",
+	},
 	"*": {
 		"on_change": [
 			"lms.lms.doctype.lms_badge.lms_badge.process_badges",
