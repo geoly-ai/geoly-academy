@@ -1,6 +1,10 @@
+import { ref } from 'vue'
 import { createResource } from 'frappe-ui'
 
 const LANGUAGE_STORAGE_KEY = 'lms_preferred_language'
+
+/** Bump to re-run Vue computeds that call __() after translations load. */
+export const i18nRevision = ref(0)
 
 export default function translationPlugin(app) {
 	app.config.globalProperties.__ = translate
@@ -18,6 +22,9 @@ export default function translationPlugin(app) {
 }
 
 function translate(message) {
+	// Vue computed() must depend on this to refresh after async translations arrive.
+	i18nRevision.value
+
 	let translatedMessages = window.translatedMessages || {}
 	let translatedMessage = translatedMessages[message] || message
 
@@ -49,7 +56,8 @@ export function fetchTranslations(lang) {
 		cache: false,
 		auto: true,
 		onSuccess(data) {
-			window.translatedMessages = data
+			window.translatedMessages = data || {}
+			i18nRevision.value += 1
 		},
 	})
 }
@@ -59,11 +67,11 @@ export async function setLanguage(language) {
 	const result = await call('lms.lms.api.set_language', { language })
 
 	localStorage.setItem(LANGUAGE_STORAGE_KEY, result.language)
-	window.translatedMessages = result.translations
+	window.translatedMessages = result.translations || {}
+	i18nRevision.value += 1
 	if (window.boot) {
 		window.boot.language = result.language
 	}
 
-	// Reload so route-level strings and cached components pick up the new locale.
 	window.location.reload()
 }

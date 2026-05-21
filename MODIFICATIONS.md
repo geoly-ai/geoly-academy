@@ -1,6 +1,6 @@
-# Modifications to Frappe LMS (v2.52.1 base)
+# Modifications to Frappe LMS (v2.54.2 base)
 
-This fork is based on [frappe/lms](https://github.com/frappe/lms) tag `v2.52.1` and is licensed under **AGPL-3.0-or-later**.
+This fork is based on [frappe/lms](https://github.com/frappe/lms) `main` at tag `v2.54.2` and is licensed under **AGPL-3.0-or-later**.
 
 ## Changes
 
@@ -29,3 +29,5 @@ This fork is based on [frappe/lms](https://github.com/frappe/lms) tag `v2.52.1` 
 ## Corresponding source
 
 Publish this repository (or your fork) and set `lms_source_code_url` to that public URL so network users can obtain the corresponding source under AGPL section 13.
+
+Do not point `lms_source_code_url` at the upstream `frappe/lms` repository after adding local modifications such as COS integration or custom translations. The link should resolve to the exact corresponding source for the deployed version.

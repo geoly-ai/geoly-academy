@@ -18,5 +18,5 @@
 <script setup>
 import { computed } from 'vue'
 
-const sourceUrl = computed(() => window.boot?.source_code_url || '')
+const sourceUrl = computed(() => window.source_code_url || window.boot?.source_code_url || '')
 </script>

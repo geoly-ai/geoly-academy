@@ -35,8 +35,10 @@ from lms.lms.language import (
 	frappe_language,
 	get_current_language,
 	get_language_payload,
+	normalize_language,
 	set_current_language,
 )
+from lms.lms.translations.loader import merge_translations, resolve_translation_language
 from lms.lms.utils import (
 	LMS_ROLES,
 	can_modify_batch,
@@ -80,8 +82,10 @@ def get_user_info():
 
 @frappe.whitelist(allow_guest=True)
 def get_translations(lang: str | None = None):
-	language = frappe_language(lang) if lang else frappe_language(get_current_language())
-	return get_all_translations(language)
+	code = normalize_language(lang) if lang else get_current_language()
+	frappe_lang = resolve_translation_language(frappe_language(code))
+	translations = get_all_translations(frappe_lang)
+	return merge_translations(code, translations)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -90,12 +94,20 @@ def get_language():
 
 
 @frappe.whitelist(allow_guest=True)
+def get_source_code_url():
+	return {
+		"source_code_url": frappe.conf.get("lms_source_code_url") or "",
+	}
+
+
+@frappe.whitelist(allow_guest=True)
 def set_language(language: str):
 	code = set_current_language(language)
+	frappe_lang = resolve_translation_language(frappe_language(code))
 	return {
 		"language": code,
-		"frappe_language": frappe_language(code),
-		"translations": get_all_translations(frappe_language(code)),
+		"frappe_language": frappe_lang,
+		"translations": merge_translations(code, get_all_translations(frappe_lang)),
 	}
 
 
