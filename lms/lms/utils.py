@@ -29,6 +29,7 @@ from frappe.utils.html_utils import sanitize_html
 from pypika import Case
 from pypika import functions as fn
 
+from lms.lms.cdn_auth import sign_lesson_media_urls
 from lms.lms.doctype.lms_enrollment.lms_enrollment import update_program_progress
 from lms.lms.md import find_macros
 
@@ -1199,6 +1200,10 @@ def get_lesson(course: str, chapter: int, lesson: int) -> dict:
 	lesson_details.prev = neighbours["prev"]
 	lesson_details.membership = membership
 	lesson_details.icon = get_lesson_icon(lesson_details.body, lesson_details.content)
+	lesson_details.content = sign_lesson_media_urls(lesson_details.content)
+	lesson_details.instructor_content = sign_lesson_media_urls(
+		lesson_details.instructor_content
+	)
 	lesson_details.instructors = get_instructors("LMS Course", course)
 	lesson_details.course_title = course_info.title
 	lesson_details.paid_certificate = course_info.paid_certificate

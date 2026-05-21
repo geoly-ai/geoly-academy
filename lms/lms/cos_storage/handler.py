@@ -49,7 +49,7 @@ def get_s3_client(config: dict):
 		aws_access_key_id=config["access_key"],
 		aws_secret_access_key=config["secret_key"],
 		region_name=config["region"],
-		config=Config(signature_version="s3v4"),
+		config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}),
 	)
 
 
@@ -94,15 +94,16 @@ def upload_file_to_cos(doc, method=None):
 	if content_type:
 		extra_args["ContentType"] = content_type
 
-	if doc.is_private:
-		extra_args["ACL"] = "private"
-	else:
-		extra_args["ACL"] = "public-read"
+	# Keep access control at the bucket/CDN layer. The deployment uses a
+	# public-read/private-write bucket, and protected course videos are handled
+	# by CDN URL authentication on read.
 
 	with open(file_path, "rb") as file_obj:
 		client.upload_fileobj(file_obj, config["bucket"], key, ExtraArgs=extra_args)
 
 	public_url = get_public_url(config, key)
+	doc.file_url = public_url
+	doc.cos_uploaded = 1
 	frappe.db.set_value(
 		"File",
 		doc.name,

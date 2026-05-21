@@ -5,11 +5,19 @@ import { h, createApp } from 'vue'
 import { Upload as UploadIcon } from 'lucide-vue-next'
 import { createDialog } from '@/utils/dialogs'
 import translationPlugin from '../translation'
+import {
+	getVideoTypeFromUrl,
+	videoFileTypes,
+	videoUrlPattern,
+} from '@/utils/media'
 
 export class Upload {
-	constructor({ data, api, readOnly }) {
-		this.data = data
+	constructor({ data, api, block, readOnly }) {
+		this.data = data || {}
+		this.api = api
+		this.block = block
 		this.readOnly = readOnly
+		this.insertIndex = null
 	}
 
 	static get toolbox() {
@@ -22,13 +30,21 @@ export class Upload {
 		app.mount(div)
 
 		return {
-			title: 'Upload',
+			title: (window.__ && window.__('Upload to COS')) || 'Upload to COS',
 			icon: div.innerHTML,
 		}
 	}
 
 	static get isReadOnlySupported() {
 		return true
+	}
+
+	static get pasteConfig() {
+		return {
+			patterns: {
+				video: videoUrlPattern,
+			},
+		}
 	}
 
 	render() {
@@ -44,9 +60,12 @@ export class Upload {
 	}
 
 	renderFile(file) {
+		this.wrapper.innerHTML = ''
+
 		if (this.isVideo(file.file_type)) {
 			const app = createApp(VideoBlock, {
-				file: file.file_url,
+				file: file.play_url || file.file_url,
+				source: file.file_url,
 				readOnly: this.readOnly,
 				quizzes: file.quizzes || [],
 				saveQuizzes: (quizzes) => {
@@ -82,21 +101,55 @@ export class Upload {
 			const src = file.file_url.startsWith('http')
 				? encodeURI(file.file_url)
 				: encodeURI(file.file_url)
-			this.wrapper.innerHTML = `<img class="mb-4" src=${src} width='100%'>`
+			this.wrapper.innerHTML = `<img class="mb-4" src="${src}" width='100%'>`
 			return
 		}
 	}
 
 	renderFileUploader() {
+		this.insertIndex = this.getCurrentBlockIndex()
 		const app = createApp(UploadPlugin, {
-			onFileUploaded: (file) => {
-				this.data.file_url = file.file_url
-				this.data.file_type = file.file_type
-				this.renderFile(file)
-			},
+			onFilesUploaded: (files) => this.addFiles(files),
 		})
 		app.use(translationPlugin)
 		app.mount(this.wrapper)
+	}
+
+	addFiles(files) {
+		files = Array.isArray(files) ? files : [files]
+		if (!files.length) return
+
+		const [firstFile, ...remainingFiles] = files
+		this.data.file_url = firstFile.file_url
+		this.data.file_type = firstFile.file_type
+		this.renderFile(firstFile)
+
+		remainingFiles.forEach((file, index) => {
+			this.api?.blocks?.insert(
+				'upload',
+				{
+					file_url: file.file_url,
+					file_type: file.file_type,
+				},
+				{},
+				this.getInsertIndex() + index + 1,
+				false
+			)
+		})
+	}
+
+	onPaste(event) {
+		if (event.type !== 'pattern') return
+
+		const videoUrl = event.detail.data?.trim()
+		const fileType = getVideoTypeFromUrl(videoUrl)
+		if (!fileType) return
+
+		this.data.file_url = videoUrl
+		this.data.file_type = fileType
+		if (this.wrapper) {
+			this.renderFile(this.data)
+		}
 	}
 
 	validate(savedData) {
@@ -115,11 +168,11 @@ export class Upload {
 	}
 
 	isVideo(type) {
-		return ['mov', 'mp4', 'avi', 'mkv', 'webm'].includes(type.toLowerCase())
+		return videoFileTypes.includes(type?.toLowerCase())
 	}
 
 	isAudio(type) {
-		return ['mp3', 'wav', 'ogg'].includes(type.toLowerCase())
+		return ['mp3', 'wav', 'ogg'].includes(type?.toLowerCase())
 	}
 
 	isCourseware(type) {
@@ -135,4 +188,36 @@ export class Upload {
 			'txt',
 		].includes(type?.toLowerCase())
 	}
+
+	getCurrentBlockIndex() {
+		const ownBlockIndex = this.getOwnBlockIndex()
+		if (ownBlockIndex !== null) return ownBlockIndex
+
+		const currentIndex = this.api?.blocks?.getCurrentBlockIndex?.()
+		if (Number.isInteger(currentIndex) && currentIndex >= 0) {
+			return currentIndex
+		}
+
+		const blockCount = this.api?.blocks?.getBlocksCount?.()
+		return Number.isInteger(blockCount) && blockCount > 0 ? blockCount - 1 : 0
+	}
+
+	getInsertIndex() {
+		return Number.isInteger(this.insertIndex)
+			? this.insertIndex
+			: this.getCurrentBlockIndex()
+	}
+
+	getOwnBlockIndex() {
+		const blockCount = this.api?.blocks?.getBlocksCount?.()
+		if (!this.block?.id || !Number.isInteger(blockCount)) return null
+
+		for (let index = 0; index < blockCount; index++) {
+			if (this.api.blocks.getBlockByIndex(index)?.id === this.block.id) {
+				return index
+			}
+		}
+		return null
+	}
+
 }
