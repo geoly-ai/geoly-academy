@@ -586,7 +586,6 @@ const checkIfCanAddProgram = (forMobile = false) => {
 	const { userResource } = usersStore()
 	const { programs } = useSettings()
 	if (!userResource.data) return false
-	if (forMobile) return false
 	if (userResource?.data?.is_moderator || userResource?.data?.is_instructor) {
 		return true
 	}

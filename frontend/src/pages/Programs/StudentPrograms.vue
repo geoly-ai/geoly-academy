@@ -48,7 +48,9 @@
 				</div>
 				<EmptyStateLayout
 					v-else
-					:name="convertToTitleCase(category) + ' Programs'"
+					:title="emptyStateTitle(category)"
+					:description="emptyStateDescription(category)"
+					name="Programs"
 				/>
 				<!-- <div v-else class="col-span-3 text-center text-ink-gray-5">
                     {{ __('No programs found in this category.') }}
@@ -105,4 +107,18 @@ const tabs = computed(() => {
 		},
 	]
 })
+
+const categoryLabel = (category: string) => {
+	if (category === 'enrolled') return __('Enrolled')
+	if (category === 'published') return __('Published')
+	return __(convertToTitleCase(category))
+}
+
+const emptyStateTitle = (category: string) =>
+	__('No {0} {1} Found').format(categoryLabel(category), __('Programs'))
+
+const emptyStateDescription = (category: string) =>
+	__(
+		'There are no {0} {1} currently. Keep an eye out, fresh learning experiences are on the way!'
+	).format(categoryLabel(category).toLowerCase(), __('Programs').toLowerCase())
 </script>

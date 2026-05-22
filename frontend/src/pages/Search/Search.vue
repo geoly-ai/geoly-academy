@@ -9,7 +9,7 @@
 			<TextInput
 				ref="searchInput"
 				class="flex-1"
-				placeholder="Search for a keyword or phrase and press enter"
+				:placeholder="__('Search for a keyword or phrase and press enter')"
 				autocomplete="off"
 				:model-value="query"
 				@update:model-value="updateQuery"

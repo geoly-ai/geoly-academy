@@ -24,7 +24,7 @@
 						:is="icons[link.icon]"
 						class="h-4 w-4 stroke-1.5 text-ink-gray-5"
 					/>
-					<div>{{ link.label }}</div>
+					<div>{{ __(link.label) }}</div>
 				</div>
 			</div>
 
@@ -61,7 +61,6 @@
 import AboutDialog from '@/components/AboutDialog.vue'
 import { getSidebarLinks } from '@/utils'
 import { useRouter } from 'vue-router'
-import { call } from 'frappe-ui'
 import { ref, watch } from 'vue'
 import { sessionStore } from '@/stores/session'
 import { useSettings } from '@/stores/settings'
@@ -146,7 +145,6 @@ const updateSidebarLinks = () => {
 		{
 			onSuccess: async (data) => {
 				filterLinksToShow(data)
-				await addPrograms()
 				if (isModerator.value || isInstructor.value) {
 					addQuizzes()
 					addAssignments()
@@ -170,21 +168,6 @@ const addProgrammingExercises = () => {
 	addLink('Programming Exercises', 'Code', 'ProgrammingExercises')
 }
 
-const addPrograms = async () => {
-	if (sidebarLinks.value.some((link) => link.label === 'Programs')) return
-	let canAddProgram = await checkIfCanAddProgram()
-	if (!canAddProgram) return
-	let activeFor = ['Programs', 'ProgramDetail']
-	let index = 1
-
-	sidebarLinks.value.splice(index, 0, {
-		label: 'Programs',
-		icon: 'Route',
-		to: 'Programs',
-		activeFor: activeFor,
-	})
-}
-
 watch(
 	userResource,
 	async () => {
@@ -197,15 +180,6 @@ watch(
 	},
 	{ immediate: true }
 )
-
-const checkIfCanAddProgram = async () => {
-	if (!userResource.data) return false
-	if (isModerator.value || isInstructor.value) {
-		return true
-	}
-	const programs = await call('lms.lms.utils.get_programs')
-	return programs.enrolled.length > 0 || programs.published.length > 0
-}
 
 let isActive = (tab) => {
 	return tab.activeFor?.includes(router.currentRoute.value.name)

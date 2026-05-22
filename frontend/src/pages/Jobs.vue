@@ -33,7 +33,7 @@
 		>
 			<div class="flex items-center justify-between">
 				<div class="text-lg font-semibold text-ink-gray-9 md:mb-0">
-					{{ __('{0} {1} Jobs').format(jobCount.data ?? 0, activeTab) }}
+					{{ __('{0} {1} Jobs').format(jobCount.data ?? 0, __(activeTab)) }}
 				</div>
 				<TabButtons
 					v-if="tabs.length > 1"
