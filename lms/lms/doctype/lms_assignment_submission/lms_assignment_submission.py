@@ -40,28 +40,41 @@ class LMSAssignmentSubmission(Document):
 				self.trigger_update_notification()
 
 	def validate_private_attachments(self):
+		self.attach_file_to_document(self.assignment_attachment, "assignment_attachment")
 		if self.type == "Text":
 			from bs4 import BeautifulSoup
 
 			soup = BeautifulSoup(self.answer, "html.parser")
-			images = soup.find_all("img")
-			self.attach_images_to_document(images)
+			self.attach_media_to_document(soup)
 
-	def attach_images_to_document(self, images):
-		for img in images:
-			src = img.get("src", "")
-			if src.startswith("/private/files/"):
-				file_name = frappe.db.get_value("File", {"file_url": src}, "name")
-				if file_name:
-					frappe.db.set_value(
-						"File",
-						file_name,
-						{
-							"attached_to_doctype": self.doctype,
-							"attached_to_name": self.name,
-							"attached_to_field": "answer",
-						},
-					)
+	def attach_media_to_document(self, soup):
+		urls = set()
+		for selector, attribute in (("img", "src"), ("video", "src"), ("source", "src")):
+			for element in soup.find_all(selector):
+				url = element.get(attribute, "")
+				if url:
+					urls.add(url)
+
+		for url in urls:
+			self.attach_file_to_document(url, "answer")
+
+	def attach_file_to_document(self, file_url, attached_to_field):
+		if not file_url:
+			return
+
+		file_name = frappe.db.get_value("File", {"file_url": file_url}, "name")
+		if not file_name:
+			return
+
+		frappe.db.set_value(
+			"File",
+			file_name,
+			{
+				"attached_to_doctype": self.doctype,
+				"attached_to_name": self.name,
+				"attached_to_field": attached_to_field,
+			},
+		)
 
 	def trigger_update_notification(self):
 		notification = frappe._dict(

@@ -5,10 +5,13 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from lms.lms.cos_storage.handler import get_file_content
+
 
 class LMSJobApplication(Document):
 	def validate(self):
 		self.validate_duplicate()
+		self.attach_resume_file()
 
 	def after_insert(self):
 		job_owner = frappe.get_value("Job Opportunity", self.job, "owner")
@@ -48,9 +51,28 @@ class LMSJobApplication(Document):
 				attachments=[
 					{
 						"fname": resume.file_name,
-						"fcontent": resume.get_content(),
+						"fcontent": get_file_content(resume),
 					}
 				],
 				header=[subject, "green"],
 				retry=3,
 			)
+
+	def attach_resume_file(self):
+		if not self.resume:
+			return
+
+		file_name = frappe.db.get_value("File", {"file_url": self.resume}, "name")
+		if not file_name:
+			return
+
+		frappe.db.set_value(
+			"File",
+			file_name,
+			{
+				"is_private": 1,
+				"attached_to_doctype": self.doctype,
+				"attached_to_name": self.name,
+				"attached_to_field": "resume",
+			},
+		)

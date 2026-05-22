@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import mimetypes
 import os
+import shutil
 
 import frappe
 from frappe.utils import cint
@@ -68,6 +69,42 @@ def get_public_url(config: dict, key: str) -> str:
 	bucket = config["bucket"]
 	region = config["region"]
 	return f"https://{bucket}.cos.{region}.myqcloud.com/{key}"
+
+
+def get_file_content(doc) -> bytes:
+	file_path = doc.get_full_path()
+	if file_path and os.path.exists(file_path):
+		with open(file_path, "rb") as file_obj:
+			return file_obj.read()
+
+	if not doc.get("cos_uploaded"):
+		raise FileNotFoundError(f"Local file not found for File {doc.name}")
+
+	config = get_cos_config()
+	if not config:
+		raise FileNotFoundError(f"COS is not configured for File {doc.name}")
+
+	client = get_s3_client(config)
+	response = client.get_object(Bucket=config["bucket"], Key=get_object_key(doc))
+	return response["Body"].read()
+
+
+def copy_file_to_path(doc, destination_path: str) -> str:
+	file_path = doc.get_full_path()
+	if file_path and os.path.exists(file_path):
+		shutil.copyfile(file_path, destination_path)
+		return destination_path
+
+	if not doc.get("cos_uploaded"):
+		raise FileNotFoundError(f"Local file not found for File {doc.name}")
+
+	config = get_cos_config()
+	if not config:
+		raise FileNotFoundError(f"COS is not configured for File {doc.name}")
+
+	client = get_s3_client(config)
+	client.download_file(config["bucket"], get_object_key(doc), destination_path)
+	return destination_path
 
 
 def upload_file_to_cos(doc, method=None):

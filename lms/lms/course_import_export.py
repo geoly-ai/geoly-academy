@@ -12,6 +12,7 @@ from frappe import _
 from frappe.utils import escape_html, validate_email_address
 from frappe.utils.file_manager import is_safe_path
 
+from lms.lms.cos_storage.handler import copy_file_to_path, get_file_content
 from lms.lms.utils import create_user as create_lms_user
 
 
@@ -152,11 +153,7 @@ def get_course_assets(course, lessons, instructors, evaluator):
 def read_asset_content(url):
 	try:
 		file_doc = frappe.get_doc("File", {"file_url": url})
-		file_path = file_doc.get_full_path()
-		if not is_safe_path(file_path):
-			return None
-		with open(file_path, "rb") as f:
-			return f.read()
+		return get_file_content(file_doc)
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), f"Could not read asset: {url}")
 		return None
@@ -252,15 +249,20 @@ def write_assessments_json(zip_file, assessments, questions, test_cases):
 def write_assets(zip_file, assets):
 	assets = list(set(assets))
 	for asset in assets:
-		real_path = frappe.get_site_path(asset.lstrip("/"))
-		if not asset or not isinstance(asset, str) or not is_safe_path(real_path):
+		if not asset or not isinstance(asset, str):
 			continue
 
-		file_doc = frappe.get_doc("File", {"file_url": asset})
-		file_path = os.path.abspath(file_doc.get_full_path())
+		try:
+			file_doc = frappe.get_doc("File", {"file_url": asset})
+		except Exception:
+			continue
 
-		safe_filename = sanitize_string(os.path.basename(asset))
-		zip_file.write(file_path, f"assets/{safe_filename}")
+		content = read_asset_content(asset)
+		if content is None:
+			continue
+
+		safe_filename = sanitize_string(file_doc.file_name or os.path.basename(asset))
+		zip_file.writestr(f"assets/{safe_filename}", content)
 
 
 def move_zip_to_private(tmp_path, zip_filename):
@@ -329,24 +331,40 @@ def frappe_json_dumps(data):
 
 
 def import_course_zip(zip_file_path):
-	zip_file_path = zip_file_path.lstrip("/")
-	actual_path = frappe.get_site_path(zip_file_path)
-	validate_zip_file(actual_path)
+	temp_path = None
+	try:
+		file_name = frappe.db.get_value("File", {"file_url": zip_file_path}, "name")
+		if file_name:
+			file_doc = frappe.get_doc("File", file_name)
+			suffix = os.path.splitext(file_doc.file_name or "")[1] or ".zip"
+			fd, temp_path = tempfile.mkstemp(
+				suffix=suffix, dir=frappe.get_site_path("private", "files")
+			)
+			os.close(fd)
+			actual_path = copy_file_to_path(file_doc, temp_path)
+		else:
+			zip_file_path = zip_file_path.lstrip("/")
+			actual_path = frappe.get_site_path(zip_file_path)
 
-	with zipfile.ZipFile(actual_path, "r") as zip_file:
-		course_data = read_json_from_zip(zip_file, "course.json")
-		if not course_data:
-			frappe.throw(_("Invalid course ZIP: Missing course.json"))
+		validate_zip_file(actual_path)
 
-		create_assets(zip_file)
-		create_user_for_instructors(zip_file)
-		create_evaluator(zip_file)
-		course_doc = create_course_doc(course_data)
-		chapter_docs = create_chapter_docs(zip_file, course_doc.name)
-		create_assessment_docs(zip_file)
-		create_lesson_docs(zip_file, course_doc.name, chapter_docs)
-		save_course_structure(zip_file, course_doc, chapter_docs)
-		return course_doc.name
+		with zipfile.ZipFile(actual_path, "r") as zip_file:
+			course_data = read_json_from_zip(zip_file, "course.json")
+			if not course_data:
+				frappe.throw(_("Invalid course ZIP: Missing course.json"))
+
+			create_assets(zip_file)
+			create_user_for_instructors(zip_file)
+			create_evaluator(zip_file)
+			course_doc = create_course_doc(course_data)
+			chapter_docs = create_chapter_docs(zip_file, course_doc.name)
+			create_assessment_docs(zip_file)
+			create_lesson_docs(zip_file, course_doc.name, chapter_docs)
+			save_course_structure(zip_file, course_doc, chapter_docs)
+			return course_doc.name
+	finally:
+		if temp_path and os.path.exists(temp_path):
+			os.remove(temp_path)
 
 
 def read_json_from_zip(zip_file, filename):

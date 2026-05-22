@@ -4,6 +4,7 @@ import json
 import os
 import re
 import shutil
+import tempfile
 import xml.etree.ElementTree as ET
 import zipfile
 from datetime import timedelta
@@ -30,6 +31,7 @@ from frappe.utils.response import Response
 from pypika import functions as fn
 
 from lms.lms.course_import_export import export_course_zip, import_course_zip
+from lms.lms.cos_storage.handler import copy_file_to_path
 from lms.lms.doctype.course_lesson.course_lesson import save_progress
 from lms.lms.language import (
 	frappe_language,
@@ -1099,19 +1101,29 @@ def upsert_chapter(
 def extract_package(course: str, title: str, scorm_package: dict):
 	package = frappe.get_doc("File", scorm_package.name)
 	zip_path = package.get_full_path()
+	temp_zip_path = None
+	if not zip_path or not os.path.exists(zip_path):
+		suffix = os.path.splitext(package.file_name or "")[1] or ".zip"
+		fd, temp_zip_path = tempfile.mkstemp(suffix=suffix)
+		os.close(fd)
+		zip_path = copy_file_to_path(package, temp_zip_path)
 	scorm_root = os.path.realpath(frappe.get_site_path("public", "scorm"))
 	extract_path = frappe.get_site_path("public", "scorm", course, title)
 
 	if not os.path.realpath(extract_path).startswith(scorm_root + os.sep):
 		frappe.throw(_("Invalid course or chapter name"))
 
-	with zipfile.ZipFile(zip_path, "r") as zf:
-		dest = os.path.realpath(extract_path)
-		for name in zf.namelist():
-			target = os.path.realpath(os.path.join(extract_path, name))
-			if not target.startswith(dest + os.sep) and target != dest:
-				frappe.throw(_("Invalid file path in package"))
-		zf.extractall(extract_path)
+	try:
+		with zipfile.ZipFile(zip_path, "r") as zf:
+			dest = os.path.realpath(extract_path)
+			for name in zf.namelist():
+				target = os.path.realpath(os.path.join(extract_path, name))
+				if not target.startswith(dest + os.sep) and target != dest:
+					frappe.throw(_("Invalid file path in package"))
+			zf.extractall(extract_path)
+	finally:
+		if temp_zip_path and os.path.exists(temp_zip_path):
+			os.remove(temp_zip_path)
 
 	return extract_path
 
