@@ -19,17 +19,19 @@ FRAPPE_LANGUAGE_BY_CODE = {
 def normalize_language(language: str | None) -> str:
 	"""Return a supported UI language code (`en` or `zh`)."""
 	if not language:
-		return "en"
+		return "zh"
 
 	value = str(language).strip().lower().replace("_", "-")
 	if value in {"zh", "zh-cn", "zh-hans", "chinese", "中文"}:
 		return "zh"
-	return "en"
+	if value in {"en", "en-us", "en-gb", "english"}:
+		return "en"
+	return "zh"
 
 
 def frappe_language(code: str) -> str:
 	"""Language code used by Frappe translation APIs."""
-	return FRAPPE_LANGUAGE_BY_CODE.get(normalize_language(code), "en")
+	return FRAPPE_LANGUAGE_BY_CODE.get(normalize_language(code), "zh")
 
 
 def user_language_field(code: str) -> str:
@@ -38,7 +40,7 @@ def user_language_field(code: str) -> str:
 	lang_name = frappe.db.get_value("Language", {"enabled": 1, "language_code": code}, "name")
 	if lang_name:
 		return lang_name
-	return "English" if code == "en" else "Chinese"
+	return "Chinese" if code == "zh" else "English"
 
 
 def get_current_language() -> str:
@@ -53,7 +55,7 @@ def get_current_language() -> str:
 	if cookie_language:
 		return normalize_language(cookie_language)
 
-	system_language = frappe.db.get_single_value("System Settings", "language") or "en"
+	system_language = frappe.db.get_single_value("System Settings", "language") or "zh"
 	return normalize_language(system_language)
 
 

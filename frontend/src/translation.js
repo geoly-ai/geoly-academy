@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { createResource } from 'frappe-ui'
 
 const LANGUAGE_STORAGE_KEY = 'lms_preferred_language'
+const FORCED_LANGUAGE = 'zh'
 
 /** Bump to re-run Vue computeds that call __() after translations load. */
 export const i18nRevision = ref(0)
@@ -12,13 +13,13 @@ export default function translationPlugin(app) {
 	window.setLanguage = setLanguage
 	window.getCurrentLanguage = getCurrentLanguage
 
-	const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY)
-	if (stored) {
-		window.boot = window.boot || {}
-		window.boot.language = stored
-	}
+	// C-side UI is locked to Chinese; clear any previously stored
+	// preference so users coming back from the old switcher land on zh.
+	localStorage.setItem(LANGUAGE_STORAGE_KEY, FORCED_LANGUAGE)
+	window.boot = window.boot || {}
+	window.boot.language = FORCED_LANGUAGE
 
-	fetchTranslations(stored || window.boot?.language)
+	fetchTranslations(FORCED_LANGUAGE)
 }
 
 function translate(message) {
@@ -42,11 +43,7 @@ function translate(message) {
 }
 
 export function getCurrentLanguage() {
-	return (
-		localStorage.getItem(LANGUAGE_STORAGE_KEY) ||
-		window.boot?.language ||
-		'en'
-	)
+	return FORCED_LANGUAGE
 }
 
 export function fetchTranslations(lang) {

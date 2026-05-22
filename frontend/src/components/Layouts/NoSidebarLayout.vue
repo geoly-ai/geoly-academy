@@ -1,8 +1,5 @@
 <template>
 	<div class="relative flex h-full flex-col">
-		<div class="absolute right-4 top-4 z-30">
-			<LanguageSwitcher />
-		</div>
 		<div class="h-full flex-1">
 			<div class="flex h-screen text-base bg-surface-white">
 				<div class="w-full overflow-auto" id="scrollContainer">
@@ -10,11 +7,20 @@
 				</div>
 			</div>
 		</div>
-		<SourceCodeLink />
+		<button
+			type="button"
+			class="fixed bottom-3 end-4 z-30 text-p-xs text-ink-gray-6 hover:text-ink-gray-9 underline"
+			@click="showAboutDialog = true"
+		>
+			{{ __('About') }}
+		</button>
+		<AboutDialog v-model="showAboutDialog" />
 	</div>
 </template>
 
 <script setup>
-import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
-import SourceCodeLink from '@/components/SourceCodeLink.vue'
+import { ref } from 'vue'
+import AboutDialog from '@/components/AboutDialog.vue'
+
+const showAboutDialog = ref(false)
 </script>

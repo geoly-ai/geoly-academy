@@ -12,6 +12,29 @@ This fork is based on [frappe/lms](https://github.com/frappe/lms) `main` at tag 
 - `frontend/src/components/LanguageSwitcher.vue` – UI switcher
 - Layout integration in sidebar, mobile, and no-sidebar views
 - `lms/www/_lms.py` – boot payload includes language metadata
+- `lms/lms/translations/zh_frontend.json` – Simplified Chinese fallback
+  used by the SPA. Notable terminology decisions:
+  - `Batch / Batches` is consistently rendered as **班级**
+    (English `class` style) instead of the literal **批次**.
+    The English term `batch` matches Frappe's own docs page title
+    "Create a Class" (https://docs.frappelms.com/batch-creation/create-a-batch.html).
+  - `Class:` / "Attendance for Class" / "Your class on …" / "This class
+    has ended" all refer to live class sessions and are translated as
+    **直播课** to avoid colliding with `Course → 课程`.
+  - `Batch Evaluator` is rendered as **班级评估人** (consistent with
+    the existing site-wide `Evaluator → 评估人` translation).
+
+#### C-side language lock (forced Chinese)
+
+- The C-side portal (`frontend/src/components/Sidebar/AppSidebar.vue`,
+  `frontend/src/components/Layouts/MobileLayout.vue`,
+  `frontend/src/components/Layouts/NoSidebarLayout.vue`) no longer renders
+  `LanguageSwitcher.vue`. The component file is kept for reference.
+- `frontend/src/translation.js` forces the active language to `zh`,
+  resets the `lms_preferred_language` localStorage key on app boot, and
+  ignores `window.boot.language` for switching purposes.
+- `lms/lms/language.py` defaults to `zh` when no language is provided or
+  when the `System Settings.language` value is empty.
 
 ### Tencent Cloud COS file storage
 
@@ -23,8 +46,18 @@ This fork is based on [frappe/lms](https://github.com/frappe/lms) `main` at tag 
 
 ### AGPL compliance
 
-- `frontend/src/components/SourceCodeLink.vue` – prominent source offer in UI
-- Configure `lms_source_code_url` in site config (see deployment docs)
+- `frontend/src/components/AboutDialog.vue` – modal that exposes app
+  version, AGPL notice, upstream link, license link, and the deployment's
+  `lms_source_code_url` (with a visible warning if not configured).
+- `frontend/src/components/Sidebar/AppSidebar.vue` – `Info` icon next to
+  the "Powered by Frappe Learning" icon opens the About dialog.
+- `frontend/src/components/Layouts/MobileLayout.vue` – the `More` menu
+  exposes an `About` entry that opens the same dialog.
+- `frontend/src/components/Layouts/NoSidebarLayout.vue` – login page
+  shows a discreet `About` link bottom-right.
+- `frontend/src/components/SourceCodeLink.vue` is no longer rendered
+  (kept on disk as an inline-banner fallback).
+- Configure `lms_source_code_url` in site config (see deployment docs).
 
 ## Corresponding source
 

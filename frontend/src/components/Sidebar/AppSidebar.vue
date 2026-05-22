@@ -190,10 +190,6 @@
 							@click="redirectToAppointmentScreen()"
 						/>
 					</Tooltip>
-					<LanguageSwitcher
-						v-if="!sidebarStore.isSidebarCollapsed"
-						class="shrink-0"
-					/>
 					<Tooltip v-if="showOnboarding" :text="__('Help')">
 						<CircleHelp
 							class="size-4 stroke-1.5 text-ink-gray-7 cursor-pointer"
@@ -209,6 +205,12 @@
 						<Zap
 							class="size-4 stroke-1.5 text-ink-gray-7 cursor-pointer"
 							@click="redirectToWebsite()"
+						/>
+					</Tooltip>
+					<Tooltip :text="__('About')">
+						<Info
+							class="size-4 stroke-1.5 text-ink-gray-7 cursor-pointer"
+							@click="showAboutDialog = true"
 						/>
 					</Tooltip>
 				</div>
@@ -230,6 +232,7 @@
 				</Tooltip>
 			</div>
 		</div>
+		<AboutDialog v-model="showAboutDialog" />
 		<HelpModal
 			data-testid="onboarding-help-modal"
 			v-if="showOnboarding && showHelpModal"
@@ -286,6 +289,7 @@ import {
 	CircleHelp,
 	FolderTree,
 	FileText,
+	Info,
 	Phone,
 	Plus,
 	User,
@@ -309,7 +313,7 @@ import UserDropdown from '@/components/Sidebar/UserDropdown.vue'
 import CollapseSidebar from '@/components/Icons/CollapseSidebar.vue'
 import SidebarLink from '@/components/Sidebar/SidebarLink.vue'
 import CommandPalette from '@/components/CommandPalette/CommandPalette.vue'
-import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+import AboutDialog from '@/components/AboutDialog.vue'
 
 const { user } = sessionStore()
 const { userResource } = usersStore()
@@ -325,6 +329,7 @@ const pageToEdit = ref(null)
 const { sidebarSettings, activeTab, isSettingsOpen, programs } = useSettings()
 const settingsStore = useSettings()
 const showOnboarding = ref(false)
+const showAboutDialog = ref(false)
 const showIntermediateModal = ref(false)
 const currentStep = ref({})
 const router = useRouter()

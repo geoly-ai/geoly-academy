@@ -4,9 +4,6 @@
 			class="flex flex-1 flex-col overflow-y-auto pb-10"
 			id="scrollContainer"
 		>
-		<div class="absolute right-3 top-3 z-30">
-			<LanguageSwitcher />
-		</div>
 			<slot />
 		</div>
 
@@ -57,12 +54,11 @@
 				</button>
 			</div>
 		</div>
-		<SourceCodeLink />
+		<AboutDialog v-model="showAboutDialog" />
 	</div>
 </template>
 <script setup>
-import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
-import SourceCodeLink from '@/components/SourceCodeLink.vue'
+import AboutDialog from '@/components/AboutDialog.vue'
 import { getSidebarLinks } from '@/utils'
 import { useRouter } from 'vue-router'
 import { call } from 'frappe-ui'
@@ -83,6 +79,7 @@ const showMenu = ref(false)
 const menu = ref(null)
 const isModerator = ref(false)
 const isInstructor = ref(false)
+const showAboutDialog = ref(false)
 
 const handleOutsideClick = (e) => {
 	if (menu.value && !menu.value.contains(e.target)) {
@@ -124,8 +121,10 @@ const addOtherLinks = () => {
 	if (user) {
 		addLink('Notifications', 'Bell', 'Notifications')
 		addLink('Profile', 'UserRound')
+		addLink('About', 'Info')
 		addLink('Log out', 'LogOut')
 	} else {
+		addLink('About', 'Info')
 		addLink('Log in', 'LogIn')
 	}
 }
@@ -225,6 +224,7 @@ const handleClick = (tab) => {
 				username: userResource.data?.username,
 			},
 		})
+	else if (tab.label == 'About') showAboutDialog.value = true
 	else router.push({ name: tab.to })
 }
 
