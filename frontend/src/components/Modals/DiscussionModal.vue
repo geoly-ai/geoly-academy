@@ -36,7 +36,7 @@
 <script setup>
 import { call, Dialog, FormControl, TextEditor, toast } from 'frappe-ui'
 import { reactive } from 'vue'
-import { singularize } from '@/utils'
+import { ensureMediaUploadsComplete, singularize } from '@/utils'
 import { useTelemetry } from 'frappe-ui/frappe'
 
 const topics = defineModel('reloadTopics')
@@ -71,6 +71,7 @@ const submitTopic = (close) => {
 		toast.error(__('Details cannot be empty.'))
 		return
 	}
+	if (!ensureMediaUploadsComplete(topic.reply)) return
 	call('frappe.client.insert', {
 		doc: {
 			doctype: 'Discussion Topic',

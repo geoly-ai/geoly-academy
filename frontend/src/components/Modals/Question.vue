@@ -126,6 +126,7 @@ import {
 } from 'frappe-ui'
 import { watch, reactive, ref, inject } from 'vue'
 import Link from '@/components/Controls/Link.vue'
+import { ensureMediaUploadsComplete } from '@/utils'
 import { useOnboarding } from 'frappe-ui/frappe'
 
 const show = defineModel()
@@ -241,6 +242,9 @@ const questionCreation = createResource({
 })
 
 const submitQuestion = () => {
+	if (!chooseFromExisting.value && !ensureMediaUploadsComplete(question.question)) {
+		return
+	}
 	if (props.questionDetail?.question) updateQuestion()
 	else addQuestion()
 }

@@ -10,7 +10,7 @@
 <script setup>
 import { FrappeUIProvider } from 'frappe-ui'
 import { Dialogs } from '@/utils/dialogs'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useScreenSize } from './utils/composables'
 import { useSettings } from '@/stores/settings'
 import { useRouter } from 'vue-router'
@@ -18,11 +18,14 @@ import DesktopLayout from './components/Layouts/DesktopLayout.vue'
 import MobileLayout from './components/Layouts/MobileLayout.vue'
 import NoSidebarLayout from './components/Layouts/NoSidebarLayout.vue'
 import InstallPrompt from './components/InstallPrompt.vue'
+import { hydrateRichTextMediaElements } from '@/utils'
 
 const { isMobile } = useScreenSize()
 const router = useRouter()
 const noSidebar = ref(false)
 const { settings } = useSettings()
+let mediaObserver = null
+let mediaHydrationFrame = null
 
 router.beforeEach((to, from, next) => {
 	if (to.query.fromLesson || to.path === '/persona') {
@@ -32,6 +35,15 @@ router.beforeEach((to, from, next) => {
 	}
 	next()
 })
+
+const scheduleRichTextMediaHydration = () => {
+	if (mediaHydrationFrame) return
+	mediaHydrationFrame = requestAnimationFrame(async () => {
+		mediaHydrationFrame = null
+		await nextTick()
+		await hydrateRichTextMediaElements(document.body)
+	})
+}
 
 const Layout = computed(() => {
 	if (noSidebar.value) {
@@ -43,7 +55,26 @@ const Layout = computed(() => {
 	return DesktopLayout
 })
 
+onMounted(() => {
+	scheduleRichTextMediaHydration()
+	mediaObserver = new MutationObserver((mutations) => {
+		if (mutations.some((mutation) => mutation.addedNodes.length > 0)) {
+			scheduleRichTextMediaHydration()
+		}
+	})
+	mediaObserver.observe(document.body, {
+		childList: true,
+		subtree: true,
+	})
+})
+
 onUnmounted(() => {
 	noSidebar.value = false
+	mediaObserver?.disconnect()
+	mediaObserver = null
+	if (mediaHydrationFrame) {
+		cancelAnimationFrame(mediaHydrationFrame)
+		mediaHydrationFrame = null
+	}
 })
 </script>

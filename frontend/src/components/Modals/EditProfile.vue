@@ -99,7 +99,7 @@ import {
 	toast,
 } from 'frappe-ui'
 import { ref, reactive, watch } from 'vue'
-import { sanitizeHTML } from '@/utils'
+import { ensureMediaUploadsComplete, sanitizeHTML } from '@/utils'
 import Link from '@/components/Controls/Link.vue'
 
 const show = defineModel()
@@ -162,6 +162,7 @@ const validateMandatoryFields = () => {
 const saveProfile = () => {
 	let missingMandatoryFields = validateMandatoryFields()
 	if (missingMandatoryFields) return
+	if (!ensureMediaUploadsComplete(profile.bio)) return
 	profile.bio = sanitizeHTML(profile.bio)
 	updateProfile.submit(
 		{},

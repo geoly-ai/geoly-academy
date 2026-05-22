@@ -112,7 +112,7 @@
 </template>
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { sanitizeHTML } from '@/utils'
+import { ensureMediaUploadsComplete, sanitizeHTML } from '@/utils'
 import {
 	Badge,
 	Button,
@@ -241,6 +241,7 @@ const updateTestCasesInExercise = () => {
 }
 
 const saveExercise = (close: () => void) => {
+	if (!ensureMediaUploadsComplete(exercise.value.problem_statement)) return
 	validateTitle()
 	updateTestCasesInExercise()
 	if (props.exerciseID == 'new') createNewExercise(close)

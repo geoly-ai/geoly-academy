@@ -101,7 +101,7 @@ import {
 	Dropdown,
 	toast,
 } from 'frappe-ui'
-import { timeAgo } from '@/utils'
+import { ensureMediaUploadsComplete, timeAgo } from '@/utils'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { ChevronLeft, MoreHorizontal } from 'lucide-vue-next'
 import { ref, inject, onMounted, onUnmounted } from 'vue'
@@ -178,6 +178,7 @@ const postReply = () => {
 		toast.error(__('Reply cannot be empty.'))
 		return
 	}
+	if (!ensureMediaUploadsComplete(newReply.value)) return
 	call('frappe.client.insert', {
 		doc: {
 			doctype: 'Discussion Reply',
@@ -201,6 +202,7 @@ const postEdited = (reply) => {
 		toast.error(__('Reply cannot be empty.'))
 		return
 	}
+	if (!ensureMediaUploadsComplete(reply.reply)) return
 	call('frappe.client.set_value', {
 		doctype: 'Discussion Reply',
 		name: reply.name,

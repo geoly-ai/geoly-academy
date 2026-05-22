@@ -217,7 +217,7 @@ import {
 import { computed, inject, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { FileText, X } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
-import { validateFile } from '@/utils'
+import { ensureMediaUploadsComplete, validateFile } from '@/utils'
 
 const answer = ref(null)
 const attachment = ref(null)
@@ -293,6 +293,9 @@ watch(submissionResource, () => {
 })
 
 const submitAssignment = () => {
+	if (!showUploader() && !ensureMediaUploadsComplete(answer.value)) return
+	if (!ensureMediaUploadsComplete(comments.value)) return
+
 	if (props.submissionName != 'new') {
 		updateSubmission()
 	} else {

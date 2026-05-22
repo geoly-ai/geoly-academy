@@ -51,6 +51,7 @@ import {
 	toast,
 } from 'frappe-ui'
 import { reactive } from 'vue'
+import { ensureMediaUploadsComplete } from '@/utils'
 
 const show = defineModel()
 
@@ -102,6 +103,9 @@ const makeAnnouncement = (close) => {
 				}
 				if (!announcement.replyTo) {
 					return __('Reply To is required')
+				}
+				if (!ensureMediaUploadsComplete(announcement.announcement)) {
+					return false
 				}
 			},
 			onSuccess() {

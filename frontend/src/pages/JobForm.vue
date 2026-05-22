@@ -135,7 +135,7 @@ import {
 } from 'vue'
 import { sessionStore } from '@/stores/session'
 import { useRouter } from 'vue-router'
-import { sanitizeHTML } from '@/utils'
+import { ensureMediaUploadsComplete, sanitizeHTML } from '@/utils'
 import Uploader from '@/components/Controls/Uploader.vue'
 
 const user = inject('$user')
@@ -214,6 +214,7 @@ watch(
 )
 
 const saveJob = () => {
+	if (!ensureMediaUploadsComplete(job.description)) return
 	validateJobFields()
 	if (jobDetails?.doc) {
 		editJobDetails()

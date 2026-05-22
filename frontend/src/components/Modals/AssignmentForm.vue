@@ -72,7 +72,7 @@
 <script setup lang="ts">
 import { Button, Dialog, FormControl, TextEditor, toast } from 'frappe-ui'
 import { computed, reactive, watch } from 'vue'
-import { sanitizeHTML } from '@/utils'
+import { ensureMediaUploadsComplete, sanitizeHTML } from '@/utils'
 import Link from '@/components/Controls/Link.vue'
 
 const show = defineModel()
@@ -138,6 +138,7 @@ const validateFields = () => {
 }
 
 const saveAssignment = () => {
+	if (!ensureMediaUploadsComplete(assignment.question)) return
 	validateFields()
 	if (props.assignmentID == 'new') {
 		createAssignment()

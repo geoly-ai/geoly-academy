@@ -120,7 +120,12 @@ import { Button, Dialog, FormControl, TextEditor, toast } from 'frappe-ui'
 import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
 import { computed, inject, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { sanitizeHTML, createLMSCategory, cleanError } from '@/utils'
+import {
+	cleanError,
+	createLMSCategory,
+	ensureMediaUploadsComplete,
+	sanitizeHTML,
+} from '@/utils'
 import MultiSelect from '@/components/Controls/MultiSelect.vue'
 import Link from '@/components/Controls/Link.vue'
 import NewMemberModal from '@/components/Modals/NewMemberModal.vue'
@@ -189,6 +194,7 @@ const validateFields = () => {
 }
 
 const saveBatch = (close: () => void = () => {}) => {
+	if (!ensureMediaUploadsComplete(batch.value.batch_details)) return
 	validateFields()
 	props.batches.insert.submit(
 		{

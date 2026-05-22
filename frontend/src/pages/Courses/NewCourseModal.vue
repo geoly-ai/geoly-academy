@@ -83,7 +83,12 @@ import { useOnboarding, useTelemetry } from 'frappe-ui/frappe'
 import { inject, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Link from '@/components/Controls/Link.vue'
-import { cleanError, sanitizeHTML, createLMSCategory } from '@/utils'
+import {
+	cleanError,
+	createLMSCategory,
+	ensureMediaUploadsComplete,
+	sanitizeHTML,
+} from '@/utils'
 import MultiSelect from '@/components/Controls/MultiSelect.vue'
 import Uploader from '@/components/Controls/Uploader.vue'
 import NewMemberModal from '@/components/Modals/NewMemberModal.vue'
@@ -141,6 +146,7 @@ const validateFields = () => {
 }
 
 const saveCourse = (close: () => void = () => {}) => {
+	if (!ensureMediaUploadsComplete(course.value.description)) return
 	validateFields()
 	props.courses.insert.submit(
 		{

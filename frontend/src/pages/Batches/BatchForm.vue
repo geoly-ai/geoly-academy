@@ -321,6 +321,7 @@ import {
 } from 'frappe-ui'
 import {
 	createLMSCategory,
+	ensureMediaUploadsComplete,
 	getMetaInfo,
 	openSettings,
 	updateMetaInfo,
@@ -458,6 +459,7 @@ const formatTime = (timeStr) => {
 }
 
 const submitBatch = () => {
+	if (!ensureMediaUploadsComplete(batchDetail.doc?.batch_details)) return
 	updateBatch()
 }
 

@@ -6,6 +6,7 @@ import { Program } from '@/utils/program'
 import { Assignment } from '@/utils/assignment'
 import { Upload } from '@/utils/upload'
 import { Markdown } from '@/utils/markdownParser'
+import { videoFileTypes } from '@/utils/media'
 import { useSettings } from '@/stores/settings'
 import { usersStore } from '@/stores/user'
 import Header from '@editorjs/header'
@@ -109,6 +110,216 @@ export function htmlToText(html) {
 	const div = document.createElement('div')
 	div.innerHTML = html
 	return div.textContent || div.innerText || ''
+}
+
+
+export const hasPendingMediaNodes = (html) => {
+	if (!html) return false
+
+	const doc = new DOMParser().parseFromString(html, 'text/html')
+	return Array.from(doc.querySelectorAll('img, video')).some((element) => {
+		if (element.tagName === 'VIDEO') {
+			return !element.getAttribute('src') && !element.querySelector('source[src]')
+		}
+		return !element.getAttribute('src')
+	})
+}
+
+export const ensureMediaUploadsComplete = (html, message = null) => {
+	if (!hasPendingMediaNodes(html)) return true
+
+	toast.error(
+		message || __('Please wait for file uploads to finish before saving.')
+	)
+	return false
+}
+
+const richTextImageFileTypes = [
+	'avif',
+	'bmp',
+	'gif',
+	'heic',
+	'heif',
+	'jpeg',
+	'jpg',
+	'png',
+	'svg',
+	'webp',
+]
+
+const signableRichTextMediaFileTypes = new Set([
+	...videoFileTypes,
+	...richTextImageFileTypes,
+])
+
+const signedRichTextMediaCache = new Map()
+
+const normalizeMediaFileType = (fileType) => {
+	const normalizedType = `${fileType || ''}`.trim().toLowerCase().replace(/^\./, '')
+	if (!normalizedType) return ''
+	if (normalizedType.includes('/')) {
+		const subtype = normalizedType.split('/').pop()
+		if (subtype === 'svg+xml') return 'svg'
+		if (subtype === 'quicktime') return 'mov'
+		if (subtype === 'x-msvideo') return 'avi'
+		if (subtype === 'x-matroska') return 'mkv'
+		return subtype
+	}
+	return normalizedType
+}
+
+const getMediaFileTypeFromURL = (url) => {
+	try {
+		const pathname = new URL(url, window.location.origin).pathname
+		const extension = pathname.split('.').pop()?.toLowerCase() || ''
+		return normalizeMediaFileType(extension)
+	} catch {
+		return ''
+	}
+}
+
+const getCanonicalRichTextMediaURL = (url) => {
+	if (!url) return url
+	try {
+		const parsedURL = new URL(url, window.location.origin)
+		if (!parsedURL.searchParams.has('sign')) {
+			return url
+		}
+		parsedURL.searchParams.delete('sign')
+		return parsedURL.toString()
+	} catch {
+		return url
+	}
+}
+
+const inferRichTextMediaFileType = (element, url) => {
+	const explicitType = normalizeMediaFileType(element.getAttribute('type'))
+	if (explicitType) return explicitType
+	return getMediaFileTypeFromURL(url)
+}
+
+const shouldSignRichTextMediaURL = (url, fileType) => {
+	if (!url || !signableRichTextMediaFileTypes.has(fileType)) {
+		return false
+	}
+
+	try {
+		const parsedURL = new URL(url, window.location.origin)
+		return (
+			['http:', 'https:'].includes(parsedURL.protocol) &&
+			parsedURL.origin !== window.location.origin
+		)
+	} catch {
+		return false
+	}
+}
+
+const fetchSignedRichTextMediaURL = async (fileURL, fileType) => {
+	const canonicalURL = getCanonicalRichTextMediaURL(fileURL)
+	const cacheKey = `${canonicalURL}::${fileType}`
+
+	if (!signedRichTextMediaCache.has(cacheKey)) {
+		const request = fetch(
+			`/api/method/lms.lms.cdn_auth.get_signed_media_url?${new URLSearchParams({
+				file_url: canonicalURL,
+				file_type: fileType,
+			})}`,
+			{ credentials: 'same-origin' }
+		)
+			.then(async (response) => {
+				if (!response.ok) return null
+				const data = await response.json()
+				const playURL = data?.message?.play_url || null
+				if (!playURL) {
+					signedRichTextMediaCache.delete(cacheKey)
+				}
+				return playURL
+			})
+			.catch(() => {
+				signedRichTextMediaCache.delete(cacheKey)
+				return null
+			})
+
+		signedRichTextMediaCache.set(cacheKey, request)
+	}
+
+	return signedRichTextMediaCache.get(cacheKey)
+}
+
+export const normalizeStoredRichTextMedia = (html) => {
+	if (!html) return html
+
+	const doc = new DOMParser().parseFromString(html, 'text/html')
+	doc.querySelectorAll('img, video, source').forEach((element) => {
+		const src = element.getAttribute('src')
+		if (!src) return
+		element.setAttribute('src', getCanonicalRichTextMediaURL(src))
+	})
+
+	return doc.body.innerHTML
+}
+
+export const resolveRichTextMediaHTML = async (html) => {
+	if (!html) return html
+
+	const doc = new DOMParser().parseFromString(html, 'text/html')
+	const mediaElements = doc.querySelectorAll('img, video, source')
+
+	await Promise.all(
+		Array.from(mediaElements).map(async (element) => {
+			const currentURL = element.getAttribute('src')
+			if (!currentURL) return
+
+			const canonicalURL = getCanonicalRichTextMediaURL(currentURL)
+			const fileType = inferRichTextMediaFileType(element, canonicalURL)
+			if (!shouldSignRichTextMediaURL(canonicalURL, fileType)) return
+
+			const signedURL = await fetchSignedRichTextMediaURL(
+				canonicalURL,
+				fileType
+			)
+			if (signedURL) {
+				element.setAttribute('src', signedURL)
+			}
+		})
+	)
+
+	return doc.body.innerHTML
+}
+
+export const hydrateRichTextMediaElements = async (root = document) => {
+	const scope = root?.querySelectorAll ? root : document
+	const mediaElements = []
+
+	if (
+		root?.matches &&
+		['IMG', 'VIDEO', 'SOURCE'].includes(root.tagName?.toUpperCase?.())
+	) {
+		mediaElements.push(root)
+	}
+
+	mediaElements.push(...scope.querySelectorAll('img, video, source'))
+
+	await Promise.all(
+		Array.from(mediaElements).map(async (element) => {
+			if (!element.closest('.ProseMirror, [contenteditable="true"]')) return
+
+			const currentURL = element.getAttribute('src')
+			if (!currentURL) return
+
+			const canonicalURL = getCanonicalRichTextMediaURL(currentURL)
+			const fileType = inferRichTextMediaFileType(element, canonicalURL)
+			if (!shouldSignRichTextMediaURL(canonicalURL, fileType)) return
+
+			const signedURL = await fetchSignedRichTextMediaURL(
+				canonicalURL,
+				fileType
+			)
+			if (signedURL && element.getAttribute('src') !== signedURL) {
+				element.setAttribute('src', signedURL)
+			}
+		})
+	)
 }
 
 export function getEditorTools() {
@@ -734,6 +945,7 @@ export const sanitizeEditorJs = (data) => {
 }
 
 export const sanitizeHTML = (text) => {
+	text = normalizeStoredRichTextMedia(text)
 	text = DOMPurify.sanitize(decodeEntities(text), {
 		ALLOWED_TAGS: [
 			'b',
@@ -760,9 +972,24 @@ export const sanitizeHTML = (text) => {
 			'ol',
 			'li',
 			'img',
+			'video',
+			'source',
 			'blockquote',
 		],
-		ALLOWED_ATTR: ['href', 'target', 'src'],
+		ALLOWED_ATTR: [
+			'href',
+			'target',
+			'src',
+			'type',
+			'controls',
+			'width',
+			'height',
+			'loop',
+			'muted',
+			'poster',
+			'preload',
+			'playsinline',
+		],
 	})
 	return text
 }

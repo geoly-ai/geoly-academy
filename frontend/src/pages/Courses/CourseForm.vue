@@ -354,7 +354,12 @@ import {
 	watch,
 	getCurrentInstance,
 } from 'vue'
-import { getMetaInfo, updateMetaInfo, createLMSCategory } from '@/utils'
+import {
+	createLMSCategory,
+	ensureMediaUploadsComplete,
+	getMetaInfo,
+	updateMetaInfo,
+} from '@/utils'
 import { X } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import Link from '@/components/Controls/Link.vue'
@@ -452,6 +457,7 @@ const updateCourseData = () => {
 }
 
 const submitCourse = () => {
+	if (!ensureMediaUploadsComplete(courseResource.doc?.description)) return
 	updateCourse()
 }
 

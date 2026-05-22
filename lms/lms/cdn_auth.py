@@ -13,6 +13,19 @@ from frappe.utils import cint
 
 
 VIDEO_FILE_TYPES = {"mov", "mp4", "avi", "mkv", "webm"}
+IMAGE_FILE_TYPES = {
+	"avif",
+	"bmp",
+	"gif",
+	"heic",
+	"heif",
+	"jpeg",
+	"jpg",
+	"png",
+	"svg",
+	"webp",
+}
+SIGNABLE_FILE_TYPES = VIDEO_FILE_TYPES | IMAGE_FILE_TYPES
 
 
 def get_cdn_auth_config() -> dict | None:
@@ -112,8 +125,8 @@ def get_cdn_auth_url(file_url: str, config: dict | None = None) -> str | None:
 
 @frappe.whitelist()
 def get_signed_media_url(file_url: str, file_type: str | None = None) -> dict:
-	video_file_type = _get_video_file_type(file_type, file_url)
-	if video_file_type not in VIDEO_FILE_TYPES:
+	signable_file_type = _get_signable_file_type(file_type, file_url)
+	if signable_file_type not in SIGNABLE_FILE_TYPES:
 		return {"play_url": None, "play_url_expires_in": 0}
 
 	config = get_cdn_auth_config()
@@ -137,12 +150,35 @@ def _to_cdn_url(file_url: str, base_url: str) -> str | None:
 
 
 def _get_video_file_type(file_type: str | None, file_url: str | None) -> str:
-	value = str(file_type or "").lower().strip().lstrip(".")
-	if "/" in value:
-		value = value.rsplit("/", 1)[-1]
+	value = _normalize_file_type(file_type)
 	if value in VIDEO_FILE_TYPES:
 		return value
 
 	path = urlsplit(file_url or "").path
-	value = path.rsplit(".", 1)[-1].lower() if "." in path else ""
+	value = _normalize_file_type(path.rsplit(".", 1)[-1] if "." in path else "")
 	return value if value in VIDEO_FILE_TYPES else ""
+
+
+def _get_signable_file_type(file_type: str | None, file_url: str | None) -> str:
+	value = _normalize_file_type(file_type)
+	if value in SIGNABLE_FILE_TYPES:
+		return value
+
+	path = urlsplit(file_url or "").path
+	value = _normalize_file_type(path.rsplit(".", 1)[-1] if "." in path else "")
+	return value if value in SIGNABLE_FILE_TYPES else ""
+
+
+def _normalize_file_type(file_type: str | None) -> str:
+	value = str(file_type or "").lower().strip().lstrip(".")
+	if "/" in value:
+		value = value.rsplit("/", 1)[-1]
+	if value == "svg+xml":
+		return "svg"
+	if value == "quicktime":
+		return "mov"
+	if value == "x-msvideo":
+		return "avi"
+	if value == "x-matroska":
+		return "mkv"
+	return value
